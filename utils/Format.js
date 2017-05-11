@@ -1,0 +1,219 @@
+import {observable, intercept, toJS} from 'mobx'
+import {Model} from './Model'
+
+let Format, formatter
+
+formatter = function (format) {
+  return function(Model) {
+    Model.prototype.constructor.format = format
+  }
+}
+
+formatter.schema = (format) => {
+  return new Format('schema', format, null)
+}
+formatter.model = (format, defaultValue) => {
+  return new Format('model', format, defaultValue || null)
+}
+formatter.ref = (format, defaultValue) => {
+  return new Format('ref', format, defaultValue || null)
+}
+formatter.array = (format, defaultValue) => {
+  return new Format('array', format, defaultValue || null)
+}
+formatter.map = (format, defaultValue) => {
+  return new Format('map', format, defaultValue || null)
+}
+formatter.deep = (defaultValue) => {
+  return new Format('deep', null, defaultValue || {})
+}
+formatter.deepArray = (defaultValue) => {
+  return new Format('deepArray', null, defaultValue || null)
+}
+formatter.deepMap = (defaultValue) => {
+  return new Format('deepMap', null, defaultValue || null)
+}
+
+Format = class {
+  constructor(name, format, defaultValue) {
+    this.name = name
+    this.format = format
+    this.defaultValue = defaultValue
+  }
+
+  deserializeValue(format, state, getSelf) {
+    if (!format) {
+      return state || format
+    }
+    else if (format instanceof Format) {
+      return format.deserialize(state, getSelf)
+    }
+    else if (format.prototype instanceof Model) {
+      return formatter.model(format).deserialize(state || format, getSelf)
+    }
+    else if (Array.isArray(format)) {
+      return formatter.array(null).deserialize(state || format, getSelf)
+    }
+    else if (typeof format === 'object') {
+      return formatter.schema(format).deserialize(state, () => getSelf() || {})
+    }
+    else {
+      return formatter.ref(null).deserialize(state || format, getSelf)
+    }
+  }
+
+  deserialize(state, getSelf) {
+    switch(this.name) {
+      case 'schema': {
+        state = state || this.defaultValue || {}
+        const keys = Object.keys(this.format)
+        const result = keys.reduce((object, key) => {
+          if(object.hasOwnProperty(key) && Object.getOwnPropertyDescriptor(object, key).get) {
+            object[key] = this.deserializeValue(this.format[key], state[key] || object[key], () => object[key])
+          }
+          else {
+            let value
+            Object.defineProperty(object, key, {
+              get: () => {
+                return value && value.get()
+              },
+              set: (newValue) => {
+                value.set(this.deserializeValue(this.format[key], newValue || object[key], () => object[key]))
+              },
+              enumerable: true,
+              configurable: false,
+            })
+            value = observable.shallowBox(this.deserializeValue(this.format[key], state[key], () => object[key]))
+          }
+          return object
+        }, getSelf())
+        return result
+      }
+      case 'model': {
+        state = state || this.defaultValue || state
+        const ModelClass = this.format
+        return new ModelClass(state)
+      }
+      case 'ref': {
+        state = state || this.defaultValue || state
+        return this.deserializeValue(this.format, state, getSelf)
+      }
+      case 'array': {
+        state = state || this.defaultValue || []
+        const object = observable.shallowArray(state.reduce((object, item, index) => {
+          object[index] = this.deserializeValue(this.format, item, () => object[index])
+          return object
+        }, []))
+        intercept(object, (change) => {
+          if (change.type === 'update') {
+            change.newValue = this.deserializeValue(this.format, change.newValue, () => object[change.index])
+          }
+          else if (change.type === 'splice') {
+            change.added = change.added.map((item, increment) => {
+              return this.deserializeValue(this.format, item, () => object[change.index + increment])
+            })
+          }
+          return change
+        })
+        return object
+      }
+      case 'map': {
+        state = state || this.defaultValue || {}
+        const keys = Object.keys(state)
+        const object = observable.shallowMap(keys.reduce((object, key) => {
+          object[key] = this.deserializeValue(this.format, state[key], () => object[key])
+          return object
+        }, {}))
+        intercept(object, (change) => {
+          if (change.type === 'add' || change.type === 'update') {
+            change.newValue = this.deserializeValue(this.format, change.newValue, () => object.get(change.name))
+          }
+          return change
+        })
+        return object
+      }
+      case 'deep': {
+        state = state || this.defaultValue || null
+        return observable.deep(state)
+      }
+      case 'deepArray': {
+        state = state || this.defaultValue || []
+        return observable.array(state)
+      }
+      case 'deepMap': {
+        state = state || this.defaultValue || []
+        return observable.map(state)
+      }
+      default: {
+        throw new Error(`Unknown format '${this.name}'`)
+      }
+    }
+  }
+
+  serializeValue(format, object) {
+    if (!format) {
+      return object
+    }
+    else if (format instanceof Format) {
+      return format.serialize(object)
+    }
+    else if (format.prototype instanceof Model) {
+      return formatter.model(format).serialize(object)
+    }
+    else if (Array.isArray(format)) {
+      return formatter.array(null).serialize(object)
+    }
+    else if (typeof format === 'object') {
+      return formatter.schema(format).serialize(object)
+    }
+    else {
+      return formatter.ref(null).serialize(object)
+    }
+  }
+
+  serialize(object) {
+    if (!object) {
+      return object
+    }
+    switch(this.name) {
+      case 'schema': {
+        const keys = Object.keys(this.format)
+        return keys.reduce((result, key) => {
+          result[key] = this.serializeValue(this.format[key], object[key])
+          return result
+        }, {})
+      }
+      case 'model': {
+        return object.serialize()
+      }
+      case 'ref': {
+        return object
+      }
+      case 'array': {
+        return object.map((item) => {
+          return this.serializeValue(this.format, item)
+        })
+      }
+      case 'map': {
+        const keys = object.keys()
+        return keys.reduce((result, key) => {
+          result[key] = this.serializeValue(this.format, object.get(key))
+          return result
+        }, {})
+      }
+      case 'deep':
+      case 'deepArray':
+      case 'deepMap': {
+        return toJS(object)
+      }
+      default: {
+        throw new Error(`Unknown format '${this.name}'`)
+      }
+    }
+  }
+}
+
+export {
+  Format,
+  formatter as format,
+}
