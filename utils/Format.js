@@ -1,40 +1,7 @@
+import {formatter} from './formatter'
 import {observable, intercept, toJS} from 'mobx'
-import {Model} from './Model'
 
-let Format, formatter
-
-formatter = function (format) {
-  return function(Model) {
-    Model.prototype.constructor.format = format
-  }
-}
-
-formatter.schema = (format) => {
-  return new Format('schema', format, null)
-}
-formatter.model = (format, defaultValue) => {
-  return new Format('model', format, defaultValue || null)
-}
-formatter.ref = (format, defaultValue) => {
-  return new Format('ref', format, defaultValue || null)
-}
-formatter.array = (format, defaultValue) => {
-  return new Format('array', format, defaultValue || null)
-}
-formatter.map = (format, defaultValue) => {
-  return new Format('map', format, defaultValue || null)
-}
-formatter.deep = (defaultValue) => {
-  return new Format('deep', null, defaultValue || {})
-}
-formatter.deepArray = (defaultValue) => {
-  return new Format('deepArray', null, defaultValue || null)
-}
-formatter.deepMap = (defaultValue) => {
-  return new Format('deepMap', null, defaultValue || null)
-}
-
-Format = class {
+class Format {
   constructor(name, format, defaultValue) {
     this.name = name
     this.format = format
@@ -45,10 +12,15 @@ Format = class {
     if (!format) {
       return state || format
     }
-    else if (format instanceof Format) {
+
+    if (state && state.isModel) {
+      state = state.serialize()
+    }
+
+    if (format instanceof Format) {
       return format.deserialize(state, getSelf)
     }
-    else if (format.prototype instanceof Model) {
+    else if (format && format.isModelType) {
       return formatter.model(format).deserialize(state || format, getSelf)
     }
     else if (Array.isArray(format)) {
@@ -157,7 +129,7 @@ Format = class {
     else if (format instanceof Format) {
       return format.serialize(object)
     }
-    else if (format.prototype instanceof Model) {
+    else if (format.isModelType) {
       return formatter.model(format).serialize(object)
     }
     else if (Array.isArray(format)) {
@@ -211,9 +183,12 @@ Format = class {
       }
     }
   }
+
+  get isFormat() {
+    return true
+  }
 }
 
 export {
   Format,
-  formatter as format,
 }

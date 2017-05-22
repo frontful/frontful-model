@@ -1,37 +1,43 @@
-import {Format, format} from './Format'
+import {formatter} from './formatter'
+import deepExtend from 'deep-extend'
 
-export class Model {
-  constructor(state) {
-    this.initializeFormat(state)
+function model(format) {
+  return model.format(format)
+}
+
+model.format = function(format) {
+  if (!format.isFormat) {
+    format = formatter.schema(format)
   }
 
-  initializeFormat(state) {
-    if (!(this.format instanceof Format)) {
-      this.format = format.schema(this.format)
+  return function (Type) {
+    function Model(data) {
+      Model.prototype.deserialize.call(this, data)
+      Type.call(this, data)
     }
 
-    this.deserialize(state)
-  }
+    Model.isModelType = true
 
-  deserialize(state) {
-    this.format.deserialize(state, () => this)
-  }
+    Model.prototype = Object.create(Type.prototype)
+    Model.prototype.constructor = Model
 
-  serialize() {
-    return this.format.serialize(this)
-  }
-
-  get format() {
-    const format = this.__proto__.constructor.format
-    if (format) {
-      return format
+    Model.prototype.isModel = true
+    Model.prototype.deserialize = function(data) {
+      format.deserialize(data, () => this)
     }
-    else {
-      throw new Error('format() for Model instances is not defined')
+    Model.prototype.serialize = function() {
+      if (Type.isModelType) {
+        return deepExtend(Type.prototype.serialize.call(this), format.serialize(this))
+      }
+      else {
+        return format.serialize(this)
+      }
     }
-  }
 
-  set format(format) {
-    this.__proto__.constructor.format = format
+    return Model
   }
+}
+
+export {
+  model
 }
