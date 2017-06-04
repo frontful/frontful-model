@@ -1,8 +1,16 @@
 import {formatter} from './formatter'
 import deepExtend from 'deep-extend'
+import {registrar} from './registrar'
 
 function model(format) {
   return model.format(format)
+}
+
+model.config = function(configurator) {
+  return function(Model) {
+    Model.configurator = configurator
+    return Model
+  }
 }
 
 model.format = function(format) {
@@ -11,19 +19,36 @@ model.format = function(format) {
   }
 
   return function (Type) {
-    function Model(data) {
-      Model.prototype.deserialize.call(this, data)
-      Type.call(this, data)
+    function Model(data, context) {
+      if (data !== 'deferred') {
+        Model.prototype.initializer.call(this, data, context)
+      }
     }
+
+    registrar.register(Model)
 
     Model.isModelType = true
 
     Model.prototype = Object.create(Type.prototype)
     Model.prototype.constructor = Model
 
+    Model.prototype.initializer = function(data, context) {
+      if (context) {
+        this.context = context
+        if (Model.configurator) {
+          Object.assign(this, Model.configurator.call(this, context))
+        }
+      }
+      else {
+        console.warn('Missing `context` argument')
+      }
+      Model.prototype.deserialize.call(this, data)
+      Type.call(this, data, this.context)
+    }
+
     Model.prototype.isModel = true
     Model.prototype.deserialize = function(data) {
-      format.deserialize(data, () => this)
+      format.deserialize(data, this.context, () => this)
     }
     Model.prototype.serialize = function() {
       if (Type.isModelType) {
@@ -36,6 +61,10 @@ model.format = function(format) {
 
     return Model
   }
+}
+
+model.reset = function() {
+  registrar.reset()
 }
 
 export {

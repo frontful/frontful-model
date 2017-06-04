@@ -8,7 +8,7 @@ class Format {
     this.defaultValue = defaultValue
   }
 
-  deserializeValue(format, state, getSelf) {
+  deserializeValue(format, state, context, getSelf) {
     if (!format) {
       return state || format
     }
@@ -18,30 +18,30 @@ class Format {
     }
 
     if (format instanceof Format) {
-      return format.deserialize(state, getSelf)
+      return format.deserialize(state, context, getSelf)
     }
     else if (format && format.isModelType) {
-      return formatter.model(format).deserialize(state || format, getSelf)
+      return formatter.model(format).deserialize(state || format, context, getSelf)
     }
     else if (Array.isArray(format)) {
-      return formatter.array(null).deserialize(state || format, getSelf)
+      return formatter.array(null).deserialize(state || format, context, getSelf)
     }
     else if (typeof format === 'object') {
-      return formatter.schema(format).deserialize(state, () => getSelf() || {})
+      return formatter.schema(format).deserialize(state, context, () => getSelf() || {})
     }
     else {
-      return formatter.ref(null).deserialize(state || format, getSelf)
+      return formatter.ref(null).deserialize(state || format, context, getSelf)
     }
   }
 
-  deserialize(state, getSelf) {
+  deserialize(state, context, getSelf) {
     switch(this.name) {
       case 'schema': {
         state = state || this.defaultValue || {}
         const keys = Object.keys(this.format)
         const result = keys.reduce((object, key) => {
           if(object.hasOwnProperty(key) && Object.getOwnPropertyDescriptor(object, key).get) {
-            object[key] = this.deserializeValue(this.format[key], state[key] || object[key], () => object[key])
+            object[key] = this.deserializeValue(this.format[key], state[key] || object[key], context, () => object[key])
           }
           else {
             let value
@@ -50,12 +50,12 @@ class Format {
                 return value && value.get()
               },
               set: (newValue) => {
-                value.set(this.deserializeValue(this.format[key], newValue || object[key], () => object[key]))
+                value.set(this.deserializeValue(this.format[key], newValue || object[key], context, () => object[key]))
               },
               enumerable: true,
               configurable: false,
             })
-            value = observable.shallowBox(this.deserializeValue(this.format[key], state[key], () => object[key]))
+            value = observable.shallowBox(this.deserializeValue(this.format[key], state[key], context, () => object[key]))
           }
           return object
         }, getSelf())
@@ -64,25 +64,25 @@ class Format {
       case 'model': {
         state = state || this.defaultValue || state
         const ModelClass = this.format
-        return new ModelClass(state)
+        return new ModelClass(state, context)
       }
       case 'ref': {
         state = state || this.defaultValue || state
-        return this.deserializeValue(this.format, state, getSelf)
+        return this.deserializeValue(this.format, state, context, getSelf)
       }
       case 'array': {
         state = state || this.defaultValue || []
         const object = observable.shallowArray(state.reduce((object, item, index) => {
-          object[index] = this.deserializeValue(this.format, item, () => object[index])
+          object[index] = this.deserializeValue(this.format, item, context, () => object[index])
           return object
         }, []))
         intercept(object, (change) => {
           if (change.type === 'update') {
-            change.newValue = this.deserializeValue(this.format, change.newValue, () => object[change.index])
+            change.newValue = this.deserializeValue(this.format, change.newValue, context, () => object[change.index])
           }
           else if (change.type === 'splice') {
             change.added = change.added.map((item, increment) => {
-              return this.deserializeValue(this.format, item, () => object[change.index + increment])
+              return this.deserializeValue(this.format, item, context, () => object[change.index + increment])
             })
           }
           return change
@@ -93,12 +93,12 @@ class Format {
         state = state || this.defaultValue || {}
         const keys = Object.keys(state)
         const object = observable.shallowMap(keys.reduce((object, key) => {
-          object[key] = this.deserializeValue(this.format, state[key], () => object[key])
+          object[key] = this.deserializeValue(this.format, state[key], context, () => object[key])
           return object
         }, {}))
         intercept(object, (change) => {
           if (change.type === 'add' || change.type === 'update') {
-            change.newValue = this.deserializeValue(this.format, change.newValue, () => object.get(change.name))
+            change.newValue = this.deserializeValue(this.format, change.newValue, context, () => object.get(change.name))
           }
           return change
         })
