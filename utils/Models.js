@@ -1,9 +1,14 @@
 import {registrar} from './registrar'
 
 export class Models {
-  constructor() {
+  constructor(dependencies) {
+    this.dependencies = dependencies
     this.models = new Map()
     this.data = {}
+    this.context = {
+      ...this.dependencies,
+      models: this,
+    }
   }
 
   global(...args) {
@@ -30,7 +35,7 @@ export class Models {
     else {
       const model = new Type('deferred')
       this.models.set(key, model)
-      model.initializer(this.data[key] || data, this)
+      model.initializer(this.data[key] || data, this.context)
       delete this.data[key]
       return model
     }
@@ -48,7 +53,7 @@ export class Models {
       if (registrar.Types[key]) {
         const model = new registrar.Types[key]('deferred')
         this.models.set(key, model)
-        model.initializer(data[key], this)
+        model.initializer(data[key], this.context)
       }
       else {
         this.data[key] = data[key]
