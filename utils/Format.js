@@ -41,7 +41,7 @@ class Format {
         const keys = Object.keys(this.format)
         const result = keys.reduce((object, key) => {
           if(object.hasOwnProperty(key) && Object.getOwnPropertyDescriptor(object, key).get) {
-            object[key] = this.deserializeValue(this.format[key], state[key] || object[key], context, () => object[key])
+            object[key] = this.deserializeValue(this.format[key], state[key] /* || object[key] */, context, () => object[key])
           }
           else {
             let value
@@ -50,7 +50,7 @@ class Format {
                 return value && value.get()
               },
               set: (newValue) => {
-                value.set(this.deserializeValue(this.format[key], newValue || object[key], context, () => object[key]))
+                value.set(this.deserializeValue(this.format[key], newValue /* || object[key] */, context, () => object[key]))
               },
               enumerable: true,
               configurable: false,
