@@ -1,6 +1,6 @@
 {
   "name": "frontful-model",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "private": true,
   "description": "Model provider for component based application with focus on (de)serialization and reactivity",
   "license": "MIT",
@@ -8,7 +8,7 @@
     "type": "git",
     "url": "https://github.com/frontful/frontful-model.git"
   },
-  "main": "./index.js",
+  "main": "./model/index.js",
   "scripts": {
     "build": "babel-preset-frontful build",
     "deploy": "babel-preset-frontful deploy"

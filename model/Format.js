@@ -10,7 +10,7 @@ class Format {
 
   deserializeValue(format, state, context, getSelf) {
     if (!format) {
-      return state || format
+      return typeof state === 'undefined' ? format : state
     }
 
     if (state && state.isModel) {
@@ -30,7 +30,7 @@ class Format {
       return formatter.schema(format).deserialize(state, context, () => getSelf() || {})
     }
     else {
-      return formatter.ref(null).deserialize(state || format, context, getSelf)
+      return formatter.ref(null).deserialize(typeof state === 'undefined' ? format : state, context, getSelf)
     }
   }
 

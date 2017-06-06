@@ -1,6 +1,6 @@
 import {registrar} from './registrar'
 
-export class Models {
+class Models {
   constructor(dependencies) {
     this.dependencies = dependencies
     this.models = new Map()
@@ -60,4 +60,8 @@ export class Models {
       }
     })
   }
+}
+
+export {
+  Models,
 }

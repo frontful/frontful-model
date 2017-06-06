@@ -23,4 +23,8 @@ class Registrar {
   }
 }
 
-export const registrar = new Registrar()
+const registrar = new Registrar()
+
+export {
+  registrar,
+}
