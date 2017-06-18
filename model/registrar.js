@@ -6,6 +6,7 @@ class Registrar {
   reset() {
     this.counter = 0
     this.Types = {}
+    this.keys = []
   }
 
   register(...args) {
@@ -19,6 +20,7 @@ class Registrar {
       identifier = `midx_${this.counter}`
       Type.identifier = identifier
     }
+    this.keys.push(identifier)
     this.Types[identifier] = Type
   }
 }

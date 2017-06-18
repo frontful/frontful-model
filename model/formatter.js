@@ -4,6 +4,9 @@ function formatter(format) {
   return formatter.schema(format)
 }
 
+formatter.private = (format) => {
+  return new Format('private', format, null)
+}
 formatter.schema = (format) => {
   return new Format('schema', format, null)
 }

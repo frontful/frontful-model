@@ -1,4 +1,5 @@
 import {registrar} from './registrar'
+import {isBrowser} from 'frontful-utils'
 
 class Models {
   constructor(dependencies) {
@@ -8,6 +9,10 @@ class Models {
     this.context = {
       ...this.dependencies,
       models: this,
+    }
+
+    if (isBrowser() && window.frontful && window.frontful.model && window.frontful.model.state) {
+      this.deserialize(window.frontful.model.state)
     }
   }
 
@@ -49,16 +54,17 @@ class Models {
   }
 
   deserialize(data) {
-    Object.keys(data).forEach((key) => {
-      if (registrar.Types[key]) {
-        const model = new registrar.Types[key]('deferred')
-        this.models.set(key, model)
-        model.initializer(data[key], this.context)
-      }
-      else {
-        this.data[key] = data[key]
-      }
+    this.data = Object.assign({}, data)
+    registrar.keys.forEach((key) => {
+      const model = new registrar.Types[key]('deferred')
+      this.models.set(key, model)
+      model.initializer(data[key], this.context)
+      delete this.data[key]
     })
+  }
+
+  renderToString() {
+    return `<script>window.frontful = window.frontful || {};window.frontful.model = window.frontful.model || {};window.frontful.model.state = ${JSON.stringify(this.serialize())};</script>`
   }
 }
 

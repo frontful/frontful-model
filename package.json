@@ -1,6 +1,6 @@
 {
   "name": "frontful-model",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "private": true,
   "description": "Model provider for component based application with focus on (de)serialization and reactivity",
   "license": "MIT",
@@ -14,7 +14,8 @@
     "deploy": "babel-preset-frontful deploy"
   },
   "dependencies": {
-    "deep-extend": "^0.5.0"
+    "deep-extend": "^0.5.0",
+    "frontful-utils": "0.x || 1.x"
   },
   "peerDependencies": {
     "mobx": "3.x"

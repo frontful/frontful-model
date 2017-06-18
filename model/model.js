@@ -6,9 +6,9 @@ function model(format) {
   return model.format(format)
 }
 
-model.config = function(configurator) {
+model.define = function(definer) {
   return function(Model) {
-    Model.configurator = configurator
+    Model.__model_definer__ = definer
     return Model
   }
 }
@@ -35,8 +35,8 @@ model.format = function(format) {
     Model.prototype.initializer = function(data, context) {
       if (context) {
         this.context = context
-        if (Model.configurator) {
-          Object.assign(this, Model.configurator.call(this, context))
+        if (Model.__model_definer__) {
+          Object.assign(this, Model.__model_definer__.call(this, context))
         }
       }
       else {

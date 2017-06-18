@@ -66,6 +66,7 @@ class Format {
         const ModelClass = this.format
         return new ModelClass(state, context)
       }
+      case 'private':
       case 'ref': {
         state = state || this.defaultValue || state
         return this.deserializeValue(this.format, state, context, getSelf)
@@ -151,8 +152,13 @@ class Format {
       case 'schema': {
         const keys = Object.keys(this.format)
         return keys.reduce((result, key) => {
-          result[key] = this.serializeValue(this.format[key], object[key])
-          return result
+          if (this.format[key] && this.format[key].name === 'private') {
+            return result
+          }
+          else {
+            result[key] = this.serializeValue(this.format[key], object[key])
+            return result
+          }
         }, {})
       }
       case 'model': {
