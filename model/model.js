@@ -2,8 +2,8 @@ import {formatter} from './formatter'
 import deepExtend from 'deep-extend'
 import {registrar} from './registrar'
 
-function model(format) {
-  return model.format(format)
+function model(format, identifier) {
+  return model.format(format, identifier)
 }
 
 model.define = function(definer) {
@@ -13,7 +13,7 @@ model.define = function(definer) {
   }
 }
 
-model.format = function(format) {
+model.format = function(format, identifier) {
   if (!format.isFormat) {
     format = formatter.schema(format)
   }
@@ -25,7 +25,12 @@ model.format = function(format) {
       }
     }
 
-    registrar.register(Model)
+    if (identifier) {
+      registrar.register(identifier, Model)
+    }
+    else {
+      registrar.register(Model)
+    }
 
     Model.isModelType = true
 
