@@ -1,6 +1,7 @@
 import {formatter} from './formatter'
 import deepExtend from 'deep-extend'
 import {registrar} from './registrar'
+import {action} from 'mobx'
 
 function model(format, identifier) {
   return model.format(format, identifier)
@@ -52,9 +53,9 @@ model.format = function(format, identifier) {
     }
 
     Model.prototype.isModel = true
-    Model.prototype.deserialize = function(data) {
+    Model.prototype.deserialize = action(function(data) {
       format.deserialize(data, this.context, () => this)
-    }
+    })
     Model.prototype.serialize = function() {
       if (Type.isModelType) {
         return deepExtend(Type.prototype.serialize.call(this), format.serialize(this))

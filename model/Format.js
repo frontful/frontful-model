@@ -1,5 +1,5 @@
 import {formatter} from './formatter'
-import {observable, intercept, toJS} from 'mobx'
+import {observable, intercept, toJS, action} from 'mobx'
 
 class Format {
   constructor(name, format, defaultValue) {
@@ -34,6 +34,7 @@ class Format {
     }
   }
 
+  @action
   deserialize(state, context, getSelf) {
     switch(this.name) {
       case 'schema': {
@@ -41,7 +42,8 @@ class Format {
         const keys = Object.keys(this.format)
         const result = keys.reduce((object, key) => {
           if(object.hasOwnProperty(key) && Object.getOwnPropertyDescriptor(object, key).get) {
-            object[key] = this.deserializeValue(this.format[key], state[key] /* || object[key] */, context, () => object[key])
+            object[key] = state[key]
+            // object[key] = this.deserializeValue(this.format[key], state[key] /* || object[key] */, context, () => object[key])
           }
           else {
             let value
@@ -83,7 +85,7 @@ class Format {
           }
           else if (change.type === 'splice') {
             change.added = change.added.map((item, increment) => {
-              return this.deserializeValue(this.format, item, context, () => object[change.index + increment])
+              return this.deserializeValue(this.format, item, context, () => (((change.index + increment) < object.length) ? object[change.index + increment] : null))
             })
           }
           return change
