@@ -1,6 +1,6 @@
 {
   "name": "frontful-model",
-  "version": "2.0.5",
+  "version": "3.0.2",
   "private": true,
   "description": "Model provider for component based application with focus on (de)serialization and reactivity",
   "license": "MIT",
@@ -16,15 +16,15 @@
     "test:eslint": "node ./node_modules/eslint/bin/eslint.js --max-warnings 0 ."
   },
   "dependencies": {
-    "deep-extend": "^0.5.0",
-    "frontful-utils": "2.x"
+    "deep-extend": "^0.6.0",
+    "frontful-utils": "3.x"
   },
   "peerDependencies": {
-    "mobx": "3.x"
+    "mobx": "4.x"
   },
   "devDependencies": {
-    "babel-preset-frontful": "2.x",
-    "eslint-config-frontful": "2.x",
-    "mobx": "3.x"
+    "babel-preset-frontful": "3.x",
+    "eslint-config-frontful": "3.x",
+    "mobx": "4.x"
   }
 }

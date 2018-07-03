@@ -57,7 +57,7 @@ class Format {
               enumerable: true,
               configurable: false,
             })
-            value = observable.shallowBox(this.deserializeValue(this.format[key], state[key], context, () => object[key]))
+            value = observable.box(this.deserializeValue(this.format[key], state[key], context, () => object[key]), {deep: false})
           }
           return object
         }, getSelf())
@@ -75,10 +75,10 @@ class Format {
       }
       case 'array': {
         state = state || this.defaultValue || []
-        const object = observable.shallowArray(state.reduce((object, item, index) => {
+        const object = observable.array(state.reduce((object, item, index) => {
           object[index] = this.deserializeValue(this.format, item, context, () => object[index])
           return object
-        }, []))
+        }, []), {deep: false})
         intercept(object, (change) => {
           if (change.type === 'update') {
             change.newValue = this.deserializeValue(this.format, change.newValue, context, () => object[change.index])
@@ -95,10 +95,10 @@ class Format {
       case 'map': {
         state = state || this.defaultValue || {}
         const keys = Object.keys(state)
-        const object = observable.shallowMap(keys.reduce((object, key) => {
+        const object = observable.map(keys.reduce((object, key) => {
           object[key] = this.deserializeValue(this.format, state[key], context, () => object[key])
           return object
-        }, {}))
+        }, {}), {deep: false})
         intercept(object, (change) => {
           if (change.type === 'add' || change.type === 'update') {
             change.newValue = this.deserializeValue(this.format, change.newValue, context, () => object.get(change.name))
@@ -109,7 +109,7 @@ class Format {
       }
       case 'deep': {
         state = state || this.defaultValue || null
-        return observable.deep(state)
+        return observable(state)
       }
       case 'deepArray': {
         state = state || this.defaultValue || []
@@ -175,7 +175,7 @@ class Format {
         })
       }
       case 'map': {
-        const keys = object.keys()
+        const keys = Array.from(object.keys())
         return keys.reduce((result, key) => {
           result[key] = this.serializeValue(this.format, object.get(key))
           return result
