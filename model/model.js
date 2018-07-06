@@ -36,6 +36,7 @@ model.format = function(format, identifier) {
     Model.isModelType = true
 
     Model.prototype = Object.create(Type.prototype)
+    Object.setPrototypeOf(Model, Type)
     Model.prototype.constructor = Model
 
     Model.prototype.initializer = function(data, context) {
