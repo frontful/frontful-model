@@ -1,6 +1,6 @@
 {
   "name": "frontful-model",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "private": true,
   "description": "Model provider for component based application with focus on (de)serialization and reactivity",
   "license": "MIT",
